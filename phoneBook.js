@@ -7,23 +7,38 @@ var phoneBook = []; // здесь вы храните записи как хот
    на вход может прийти что угодно, будьте осторожны.
 */
 
-function isValidData(name, phone, email) {
-    if (!(/^[а-яёa-z0-9 ]+$/i).test(name)) {
+function isValidName(name) {
+    if (name === '') {
+        console.log('Name', name, 'is not valid');
         return false;
     }
-    if (!(/^(\+?[\d]{0,3}[\- ]?)?((\((?=\d{3}\))\d{3}\)|\d{3})[\- ]?)+[\d\- ]{7,10}$/)
-            .test(phone)) {
+    return true;
+}
+
+function isValidPhone(phone) {
+    var reg = new RegExp('^(\\+(?=\\d{1,3})\\d{1,3}|\\d{1,3})?[\\- ]?' +
+        '((\\((?=\\d{3}\\))\\d{3}\\)|\\d{3})[\\- ]?)+[\\d\\- ]{0,7}$');
+    if (phone === '' || !reg.test(phone)) {
+        console.log('Phone', phone, 'is not valid');
         return false;
     }
-    return ((/^[-\w.]+@([а-яёa-z0-9][-а-яёa-z0-9]+\.)+[а-яёa-z0-9]{2,4}$/i).test(email));
+    return true;
+}
+
+function isValidEmail(email) {
+    if (email === '' || !(/^(.)+@(.)+\.(.)+$/i).test(email)) {
+        console.log('Email', email, 'is not valid');
+        return false;
+    }
+    return true;
 }
 
 module.exports.add = function add(name, phone, email) {
-    if (!isValidData(name, phone, email)) {
+    if (!isValidName(name) || !isValidPhone(phone) || !isValidEmail(email)) {
         return false;
     }
-    var person = {name: name, phone: phone, email: email};
-    phoneBook.push(person);
+    phoneBook.push({name: name, phone: phone, email: email});
+    console.log('Запись добавлена ', name);
     return true;
 };
 
@@ -33,26 +48,21 @@ module.exports.add = function add(name, phone, email) {
 */
 
 function getInfo(person) {
-    var info = '';
-    for (var key in person) {
-        info = info.concat(person[key], ', ');
-    }
-    info = info.replace(/, $/, '');
-    return info;
+    return [person.name, person.phone, person.email].join(', ');
 }
 
 module.exports.find = function find(query) {
-    var matches = 'найдено:\n';
-    for (var id in phoneBook) {
+    var matches = ['найдено:'];
+    for (var id = 0; id < phoneBook.length; id++) {
         var person = phoneBook[id];
         for (var key in person) {
-            if (person[key].indexOf(query) != -1) {
-                matches = matches.concat(getInfo(person), '\n');
+            if (person[key].indexOf(query) !== -1) {
+                matches.push(getInfo(person));
                 break;
             }
         }
     }
-    console.log(matches);
+    console.log(matches.join('\n'));
 };
 
 /*
@@ -60,7 +70,7 @@ module.exports.find = function find(query) {
 */
 module.exports.remove = function remove(query) {
     var newPhoneBook = [];
-    for (var id in phoneBook) {
+    for (var id = 0; id < phoneBook.length; id++) {
         var person = phoneBook[id];
         for (var key in person) {
             var needToDelete = false;
@@ -82,7 +92,7 @@ module.exports.remove = function remove(query) {
 */
 module.exports.importFromCsv = function importFromCsv(filename) {
     var countAdds = 0;
-    var data = require('fs').readFileSync(filename, 'utf-8').split('\r\n');
+    var data = require('fs').readFileSync(filename, 'utf-8').trim().split('\n');
     for (var i in data) {
         var entry = data[i].split(';');
         if (module.exports.add(entry[0], entry[1], entry[2])) {
@@ -114,7 +124,7 @@ module.exports.showTable = function showTable() {
     console.log('┌──────────────╥──────────────╥──────────────┐');
     console.log('│          Name          ║         Phone          ║         Email          │');
 
-    for (var id in phoneBook) {
+    for (var id = 0; id < phoneBook.length; id++) {
         var person = phoneBook[id];
         console.log('├──────────────╫──────────────╫──────────────┤');
         var name = parse(person['name']);
