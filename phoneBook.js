@@ -8,7 +8,7 @@ var phoneBook = []; // здесь вы храните записи как хот
 */
 
 function isValidName(name) {
-    if (name === '') {
+    if (name === undefined || name === '') {
         console.log('Name', name, 'is not valid');
         return false;
     }
@@ -18,7 +18,7 @@ function isValidName(name) {
 function isValidPhone(phone) {
     var reg = new RegExp('^(\\+(?=\\d{1,3})\\d{1,3}|\\d{1,3})?[\\- ]?' +
         '((\\((?=\\d{3}\\))\\d{3}\\)|\\d{3})[\\- ]?)+[\\d\\- ]{0,7}$');
-    if (phone === '' || !reg.test(phone)) {
+    if (phone === undefined || phone === '' || !reg.test(phone)) {
         console.log('Phone', phone, 'is not valid');
         return false;
     }
@@ -26,7 +26,7 @@ function isValidPhone(phone) {
 }
 
 function isValidEmail(email) {
-    if (email === '' || !(/^(.)+@(.)+\.(.)+$/i).test(email)) {
+    if (email === undefined || email === '' || !(/^[^@]+@[^@]+\.[^@.]+$/i).test(email)) {
         console.log('Email', email, 'is not valid');
         return false;
     }
@@ -34,6 +34,9 @@ function isValidEmail(email) {
 }
 
 module.exports.add = function add(name, phone, email) {
+    if (arguments.length < 3) {
+        return false;
+    }
     if (!isValidName(name) || !isValidPhone(phone) || !isValidEmail(email)) {
         return false;
     }
@@ -92,8 +95,16 @@ module.exports.remove = function remove(query) {
 */
 module.exports.importFromCsv = function importFromCsv(filename) {
     var countAdds = 0;
-    var data = require('fs').readFileSync(filename, 'utf-8').trim().split('\n');
-    for (var i in data) {
+    try {
+        var data = require('fs').readFileSync(filename, 'utf-8');
+    } catch (err) {
+        if (err.code !== 'ENOENT') {
+            throw err;
+        }
+        return;
+    }
+    data = data.trim().split('\n');
+    for (var i = 0; i < data.length; i++) {
         var entry = data[i].split(';');
         if (module.exports.add(entry[0], entry[1], entry[2])) {
             countAdds++;
