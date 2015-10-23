@@ -8,17 +8,17 @@ var phoneBook = []; // здесь вы храните записи как хот
 */
 
 function isValidName(name) {
-    if (name === undefined || name === '') {
-        console.log('Name', name, 'is not valid');
-        return false;
+    if (name && typeof name === 'string') {
+        return true;
     }
-    return true;
+    console.log('Name', name, 'is not valid');
+    return false;
 }
 
 function isValidPhone(phone) {
     var reg = new RegExp('^(\\+(?=\\d{1,3})\\d{1,3}|\\d{1,3})?[\\- ]?' +
         '((\\((?=\\d{3}\\))\\d{3}\\)|\\d{3})[\\- ]?)+[\\d\\- ]{0,7}$');
-    if (phone === undefined || phone === '' || !reg.test(phone)) {
+    if (!phone || typeof phone !== 'string' || !reg.test(phone)) {
         console.log('Phone', phone, 'is not valid');
         return false;
     }
@@ -26,7 +26,7 @@ function isValidPhone(phone) {
 }
 
 function isValidEmail(email) {
-    if (email === undefined || email === '' || !(/^[^@]+@[^@]+\.[^@.]+$/i).test(email)) {
+    if (!email || typeof email !== 'string' || !(/^[^@]+@[^@]+\.[^@.]+$/i).test(email)) {
         console.log('Email', email, 'is not valid');
         return false;
     }
@@ -54,16 +54,31 @@ function getInfo(person) {
     return [person.name, person.phone, person.email].join(', ');
 }
 
-module.exports.find = function find(query) {
-    var matches = ['найдено:'];
+
+function search(query, equal) {
+    var eq = [];
+    var nonEq = [];
     for (var id = 0; id < phoneBook.length; id++) {
         var person = phoneBook[id];
+        var isEqu = false;
         for (var key in person) {
             if (person[key].indexOf(query) !== -1) {
-                matches.push(getInfo(person));
-                break;
+                eq.push(person);
+                isEqu = true;
             }
         }
+        if (!isEqu) {
+            nonEq.push(person);
+        }
+    }
+    return equal ? eq : nonEq;
+}
+
+module.exports.find = function find(query) {
+    var matches = ['найдено:'];
+    var found = search(query, true);
+    for (var i = 0; i < found.length; i++) {
+        matches.push(getInfo(found[i]));
     }
     console.log(matches.join('\n'));
 };
@@ -72,20 +87,7 @@ module.exports.find = function find(query) {
    функция удаления записи в телефонной книге.
 */
 module.exports.remove = function remove(query) {
-    var newPhoneBook = [];
-    for (var id = 0; id < phoneBook.length; id++) {
-        var person = phoneBook[id];
-        for (var key in person) {
-            var needToDelete = false;
-            if (person[key].indexOf(query) != -1) {
-                needToDelete = true;
-                break;
-            }
-        }
-        if (!needToDelete) {
-            newPhoneBook.push(person);
-        }
-    }
+    var newPhoneBook = search(query, false);
     console.log('Удалено контактов:', phoneBook.length - newPhoneBook.length, '\n');
     phoneBook = newPhoneBook;
 };
@@ -103,8 +105,11 @@ module.exports.importFromCsv = function importFromCsv(filename) {
         }
         return;
     }
-    data = data.trim().split('\n');
+    data = data.split('\n');
     for (var i = 0; i < data.length; i++) {
+        if (data[i] === '') {
+            continue;
+        }
         var entry = data[i].split(';');
         if (module.exports.add(entry[0], entry[1], entry[2])) {
             countAdds++;
@@ -122,7 +127,7 @@ module.exports.importFromCsv = function importFromCsv(filename) {
 function parse(str) {
     var indent = Math.floor((24 - str.length) / 2);
     var len = str.length;
-    for (var i = 0; i < (len % 2 != 0 ? indent + 1 : indent); i++) {
+    for (var i = 0; i < (len % 2 !== 0 ? indent + 1 : indent); i++) {
         str = (' ').concat(str);
     }
     for (var i = 0; i < indent; i++) {
